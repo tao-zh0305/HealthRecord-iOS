@@ -1,0 +1,13 @@
+name: Probe macOS 15
+
+on:
+  push:
+    paths:
+      - ".github/workflows/probe.yml"
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: macos-15
+    steps:
+      - run: xcodebuild -version
