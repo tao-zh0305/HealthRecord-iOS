@@ -138,6 +138,26 @@ final class ShortcutBridge: ObservableObject {
         let decoder = JSONDecoder()
         if let list = try? decoder.decode([ShortcutEntry].self, from: json) { return list }
         if let wrapper = try? decoder.decode(ShortcutPayload.self, from: json) { return wrapper.records }
+
+        // 容错：缺少外层方括号、尾逗号，或每行一个对象
+        guard var text = String(data: json, encoding: .utf8) else { return nil }
+        text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !text.hasPrefix("[") { text = "[" + text + "]" }
+        text = text.replacingOccurrences(of: ",}", with: "}")
+        text = text.replacingOccurrences(of: ",]", with: "]")
+        if let fixed = text.data(using: .utf8),
+           let list = try? decoder.decode([ShortcutEntry].self, from: fixed) {
+            return list
+        }
+
+        let lines = text
+            .trimmingCharacters(in: CharacterSet(charactersIn: "[]"))
+            .components(separatedBy: .newlines)
+            .flatMap { $0.components(separatedBy: ",") }
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        let items = lines.compactMap { try? decoder.decode(ShortcutEntry.self, from: Data($0.utf8)) }
+        if !items.isEmpty, items.count == lines.count { return items }
         return nil
     }
 
