@@ -2,7 +2,8 @@ import SwiftUI
 
 struct TodayView: View {
     @EnvironmentObject var store: Store
-    @EnvironmentObject var health: HealthKitManager
+    @EnvironmentObject var bridge: ShortcutBridge
+    @Environment(\.openURL) private var openURL
     @State private var sheet: EntryContext?
 
     private var todayRecords: [Record] { store.records(on: Date()) }
@@ -96,29 +97,21 @@ struct TodayView: View {
                 syncButton
             }
 
-            if health.status.contains("失败") || health.status.contains("不支持") {
-                Text(health.status)
-                    .font(.caption)
-                    .foregroundStyle(Theme.danger)
-            } else if let last = health.lastSync {
-                Text(health.status + " · " + DateText.relative(last))
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-            }
+            Text(bridge.status)
+                .font(.caption2)
+                .foregroundStyle(bridge.isStale ? Theme.accent : Color.secondary)
         }
     }
 
     private var syncButton: some View {
         Button {
-            health.sync(into: store)
+            if let url = ShortcutBridge.runURL {
+                openURL(url)
+            }
         } label: {
             HStack(spacing: 5) {
-                if health.isSyncing {
-                    ProgressView().scaleEffect(0.7)
-                } else {
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                }
-                Text(health.isSyncing ? "同步中" : "同步健康")
+                Image(systemName: "arrow.triangle.2.circlepath")
+                Text("立即同步")
             }
             .font(.caption.weight(.semibold))
             .padding(.horizontal, 11)
@@ -126,7 +119,6 @@ struct TodayView: View {
             .background(Theme.accent.opacity(0.12), in: Capsule())
             .foregroundStyle(Theme.accent)
         }
-        .disabled(health.isSyncing)
     }
 
     private var weightCard: some View {

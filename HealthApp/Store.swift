@@ -77,6 +77,38 @@ final class Store: ObservableObject {
         return inserted
     }
 
+    /// 快捷指令同步：同一天同一类型以最新数据为准
+    /// 只更新快捷指令来源的记录，手动记录保持不变
+    @discardableResult
+    func upsertShortcut(_ incoming: [Record]) -> (inserted: Int, updated: Int) {
+        var inserted = 0
+        var updated = 0
+        let cal = Calendar.current
+        for record in incoming {
+            if let index = records.firstIndex(where: {
+                $0.type == record.type
+                    && $0.note == ShortcutBridge.note
+                    && cal.isDate($0.day, inSameDayAs: record.day)
+            }) {
+                var merged = records[index]
+                merged.v1 = record.v1 ?? merged.v1
+                merged.v2 = record.v2 ?? merged.v2
+                merged.v3 = record.v3 ?? merged.v3
+                merged.text = record.text ?? merged.text
+                merged.createdAt = record.createdAt
+                if merged != records[index] {
+                    records[index] = merged
+                    updated += 1
+                }
+            } else if !has(record.type, on: record.day) {
+                records.append(record)
+                inserted += 1
+            }
+        }
+        if inserted > 0 || updated > 0 { sortAndSave() }
+        return (inserted, updated)
+    }
+
     func has(_ type: MetricType, on day: Date) -> Bool {
         records.contains {
             $0.type == type && Calendar.current.isDate($0.day, inSameDayAs: day)

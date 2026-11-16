@@ -1,9 +1,11 @@
 import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @EnvironmentObject var store: Store
-    @EnvironmentObject var health: HealthKitManager
+    @EnvironmentObject var bridge: ShortcutBridge
+    @Environment(\.openURL) private var openURL
 
     @State private var share: ShareItem?
     @State private var importing = false
@@ -17,20 +19,48 @@ struct SettingsView: View {
                     .font(.system(size: 27, weight: .bold, design: .rounded))
                     .padding(.bottom, 16)
 
-                sectionTitle("健康数据")
+                sectionTitle("快捷指令同步")
                 VStack(spacing: 0) {
-                    SettingsRow(icon: "heart.text.square",
+                    SettingsRow(icon: "bolt.horizontal.circle",
                                 tint: Theme.accent,
-                                title: "一键同步 Apple 健康",
-                                subtitle: health.status,
-                                value: health.lastSync.map { DateText.relative($0) },
-                                showsChevron: false,
-                                action: { health.sync(into: store) })
+                                title: "运行「\(ShortcutBridge.shortcutName)」",
+                                subtitle: bridge.status,
+                                action: runShortcut)
                     Divider().padding(.leading, 56)
-                    SettingsRow(icon: "info.circle",
+                    SettingsRow(icon: "doc.on.doc",
+                                tint: Theme.accent,
+                                title: "复制 JSON 模板",
+                                subtitle: "拼快捷指令数据时可直接套用",
+                                action: copyTemplate)
+                }
+                .cardStyle()
+                .padding(.bottom, 10)
+
+                Text("在「快捷指令」App 里新建「\(ShortcutBridge.shortcutName)」：读取健康样本 → 按日期汇总 → 生成 JSON 文本 → Base64 编码 → 打开 URL，内容为 \(ShortcutBridge.importPrefix) 加上编码结果。完成后建议添加到主屏，或做成每天自动运行的自动化。")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .lineSpacing(3)
+                    .padding(.horizontal, 4)
+                    .padding(.bottom, 14)
+
+                sectionTitle("自动同步")
+                VStack(spacing: 0) {
+                    SettingsRow(icon: "clock.arrow.circlepath",
+                                tint: Theme.accent,
+                                title: "每小时自动运行",
+                                subtitle: "在「快捷指令 → 自动化 → 特定时间」里按整点各建一条；iOS 不支持一次设成「每小时」，需逐个添加",
+                                showsChevron: false)
+                    Divider().padding(.leading, 56)
+                    SettingsRow(icon: "bolt.badge.clock",
+                                tint: Theme.accent,
+                                title: "打开 App 时同步",
+                                subtitle: "再建一条「App 打开时」自动化，运行同一个快捷指令，日常几乎不用手动点",
+                                showsChevron: false)
+                    Divider().padding(.leading, 56)
+                    SettingsRow(icon: "hand.tap",
                                 tint: .secondary,
-                                title: "同步范围",
-                                subtitle: "最近 30 天的步数、运动、心率、体重、体脂、血压与睡眠",
+                                title: "随时手动获取",
+                                subtitle: "今日页点「立即同步」，或直接运行快捷指令",
                                 showsChevron: false)
                 }
                 .cardStyle()
@@ -93,7 +123,7 @@ struct SettingsView: View {
                 .cardStyle()
                 .padding(.bottom, 14)
 
-                Text("数据只保存在本机 App 内，不会上传到任何服务器。卸载 App 会一并删除数据，建议定期导出备份。健康数据同步需要你在系统弹窗中授权「健康」读取权限，未授权时手动记录不受影响。")
+                Text("数据只保存在本机 App 内，不会上传到任何服务器。卸载 App 会一并删除数据，建议定期导出备份。健康数据由快捷指令写入本 App，App 本身不直接读取 Apple 健康，手动记录始终可用。")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
                     .lineSpacing(3)
@@ -140,6 +170,18 @@ struct SettingsView: View {
             .foregroundStyle(.secondary)
             .padding(.leading, 4)
             .padding(.bottom, 7)
+    }
+
+    // MARK: - 快捷指令
+
+    private func runShortcut() {
+        guard let url = ShortcutBridge.runURL else { return }
+        openURL(url)
+    }
+
+    private func copyTemplate() {
+        UIPasteboard.general.string = ShortcutBridge.sampleJSON
+        alertMessage = "JSON 模板已复制"
     }
 
     // MARK: - 导出

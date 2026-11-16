@@ -31,6 +31,10 @@ targets:
           UIApplicationSupportsMultipleScenes: false
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
+        CFBundleURLTypes:
+          - CFBundleURLName: com.local.healthrecord
+            CFBundleURLSchemes:
+              - healthrecord
         NSHealthShareUsageDescription: 读取你的步数、睡眠、心率、体重和血压，用于生成趋势记录。数据仅保存在本机。
         NSHealthUpdateUsageDescription: 本 App 不会写入健康数据。
     settings:

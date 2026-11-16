@@ -80,7 +80,7 @@ struct RecordRow: View {
                     Text(DateText.time(record.createdAt))
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    if record.note == "Apple 健康" {
+                    if record.note == "Apple 健康" || record.note == "快捷指令" {
                         Image(systemName: "heart.fill")
                             .font(.system(size: 9))
                             .foregroundStyle(Theme.accent)
