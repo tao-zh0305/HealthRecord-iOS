@@ -6,6 +6,7 @@ enum Theme {
     static let bg = Color(uiColor: .systemGroupedBackground)
     static let card = Color(uiColor: .secondarySystemGroupedBackground)
     static let line = Color(uiColor: .separator).opacity(0.55)
+    static let ink = Color(uiColor: .label)
     static let danger = Color(red: 0.82, green: 0.29, blue: 0.29)
 }
 
