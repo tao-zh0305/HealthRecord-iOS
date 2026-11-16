@@ -1,0 +1,62 @@
+name: Build IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build (unsigned)
+        run: |
+          xcodebuild \
+            -project HealthRecord.xcodeproj \
+            -scheme HealthRecord \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      - name: Package IPAs
+        run: |
+          set -euo pipefail
+          APP="build/Build/Products/Release-iphoneos/HealthRecord.app"
+          test -d "$APP"
+
+          rm -rf Payload dist
+          mkdir -p Payload dist
+
+          # 带 HealthKit 权限的版本（用于免费 Apple ID 自签）
+          codesign --force --deep --sign - \
+            --entitlements HealthApp/HealthRecord.entitlements "$APP"
+          cp -R "$APP" Payload/
+          zip -qry dist/HealthRecord-healthkit.ipa Payload
+
+          # 不带任何权限的版本（企业证书 / HealthKit 签名失败时使用）
+          rm -rf Payload && mkdir -p Payload
+          codesign --force --deep --sign - "$APP"
+          cp -R "$APP" Payload/
+          zip -qry dist/HealthRecord-plain.ipa Payload
+
+          ls -lh dist
+
+      - name: Upload IPAs
+        uses: actions/upload-artifact@v4
+        with:
+          name: HealthRecord-ipa
+          path: dist/*.ipa
+          retention-days: 30
