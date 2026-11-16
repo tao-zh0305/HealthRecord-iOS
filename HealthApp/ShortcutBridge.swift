@@ -26,6 +26,7 @@ final class ShortcutBridge: ObservableObject {
     private enum Key {
         static let lastSync = "shortcut.lastSync"
         static let lastCount = "shortcut.lastCount"
+        static let lastAutoRun = "shortcut.lastAutoRun"
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -52,6 +53,22 @@ final class ShortcutBridge: ObservableObject {
     /// 回到前台时刷新界面上的时间文案
     func refreshStatus() {
         objectWillChange.send()
+    }
+
+    // MARK: - 打开 App 时自动同步
+
+    /// 是否需要在本次启动/回到前台时自动运行快捷指令
+    /// 首次（从未成功同步）不自动跳转，避免快捷指令还没建好时反复被带走
+    func shouldAutoRun() -> Bool {
+        guard let lastSync = lastSync else { return false }
+        if Date().timeIntervalSince(lastSync) < 60 { return false }
+        if let last = defaults.object(forKey: Key.lastAutoRun) as? Date,
+           Date().timeIntervalSince(last) < 600 { return false }
+        return true
+    }
+
+    func markAutoRun() {
+        defaults.set(Date(), forKey: Key.lastAutoRun)
     }
 
     /// 打开「快捷指令」App 并运行同名快捷指令

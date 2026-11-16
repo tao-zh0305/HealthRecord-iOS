@@ -105,9 +105,9 @@ struct TodayView: View {
 
     private var syncButton: some View {
         Button {
-            if let url = ShortcutBridge.runURL {
-                openURL(url)
-            }
+            guard let url = ShortcutBridge.runURL else { return }
+            bridge.markAutoRun()
+            openURL(url)
         } label: {
             HStack(spacing: 5) {
                 Image(systemName: "arrow.triangle.2.circlepath")

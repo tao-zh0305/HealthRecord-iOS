@@ -4,6 +4,7 @@ import UIKit
 struct RootTabView: View {
     @StateObject private var store = Store()
     @StateObject private var bridge = ShortcutBridge()
+    @Environment(\.openURL) private var openURL
 
     @State private var importMessage = ""
     @State private var showImportResult = false
@@ -25,8 +26,9 @@ struct RootTabView: View {
                 .tabItem { Label("设置", systemImage: "gearshape") }
         }
         .tint(Theme.accent)
+        .onAppear { didBecomeActive() }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-            bridge.refreshStatus()
+            didBecomeActive()
         }
         .onOpenURL { url in
             guard let message = bridge.handle(url, into: store) else { return }
@@ -38,5 +40,13 @@ struct RootTabView: View {
         } message: {
             Text(importMessage)
         }
+    }
+
+    /// 启动或回到前台：刷新状态，必要时自动跑一次快捷指令
+    private func didBecomeActive() {
+        bridge.refreshStatus()
+        guard bridge.shouldAutoRun(), let url = ShortcutBridge.runURL else { return }
+        bridge.markAutoRun()
+        openURL(url)
     }
 }

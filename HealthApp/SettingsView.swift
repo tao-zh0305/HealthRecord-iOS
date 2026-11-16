@@ -45,16 +45,16 @@ struct SettingsView: View {
 
                 sectionTitle("自动同步")
                 VStack(spacing: 0) {
-                    SettingsRow(icon: "clock.arrow.circlepath",
-                                tint: Theme.accent,
-                                title: "每小时自动运行",
-                                subtitle: "在「快捷指令 → 自动化 → 特定时间」里按整点各建一条；iOS 不支持一次设成「每小时」，需逐个添加",
-                                showsChevron: false)
-                    Divider().padding(.leading, 56)
                     SettingsRow(icon: "bolt.badge.clock",
                                 tint: Theme.accent,
-                                title: "打开 App 时同步",
-                                subtitle: "再建一条「App 打开时」自动化，运行同一个快捷指令，日常几乎不用手动点",
+                                title: "打开 App 自动同步",
+                                subtitle: "启动或回到前台时自动运行快捷指令；首次请先在今日页手动同步一次",
+                                showsChevron: false)
+                    Divider().padding(.leading, 56)
+                    SettingsRow(icon: "clock.arrow.circlepath",
+                                tint: .secondary,
+                                title: "每小时自动运行",
+                                subtitle: "在「快捷指令 → 自动化 → 特定时间」按整点各建一条；iOS 不支持一次设成「每小时」，需逐个添加",
                                 showsChevron: false)
                     Divider().padding(.leading, 56)
                     SettingsRow(icon: "hand.tap",
