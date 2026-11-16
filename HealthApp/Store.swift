@@ -81,6 +81,13 @@ final class Store: ObservableObject {
     /// 只更新快捷指令来源的记录，手动记录保持不变
     @discardableResult
     func upsertShortcut(_ incoming: [Record]) -> (inserted: Int, updated: Int) {
+        let result = Store.upsert(incoming, into: &records)
+        if result.inserted > 0 || result.updated > 0 { sortAndSave() }
+        return result
+    }
+
+    /// 快捷指令写入：同一天同类型的自动记录做覆盖更新，手写记录不受影响
+    static func upsert(_ incoming: [Record], into records: inout [Record]) -> (inserted: Int, updated: Int) {
         var inserted = 0
         var updated = 0
         let cal = Calendar.current
@@ -100,13 +107,20 @@ final class Store: ObservableObject {
                     records[index] = merged
                     updated += 1
                 }
-            } else if !has(record.type, on: record.day) {
+            } else if !records.contains(where: {
+                $0.type == record.type && cal.isDate($0.day, inSameDayAs: record.day)
+            }) {
                 records.append(record)
                 inserted += 1
             }
         }
-        if inserted > 0 || updated > 0 { sortAndSave() }
+        records.sort { $0.createdAt > $1.createdAt }
         return (inserted, updated)
+    }
+
+    /// 后台由 App Intent 写入记录后，回到前台时重新读盘
+    func reload() {
+        load()
     }
 
     func has(_ type: MetricType, on day: Date) -> Bool {

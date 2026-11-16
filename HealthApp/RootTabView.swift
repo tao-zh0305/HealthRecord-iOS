@@ -44,6 +44,7 @@ struct RootTabView: View {
 
     /// 启动或回到前台：刷新状态，必要时自动跑一次快捷指令
     private func didBecomeActive() {
+        store.reload()
         bridge.refreshStatus()
         guard bridge.shouldAutoRun(), let url = ShortcutBridge.runURL else { return }
         bridge.markAutoRun()

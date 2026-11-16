@@ -134,7 +134,24 @@ final class ShortcutBridge: ObservableObject {
             data = text.removingPercentEncoding?.data(using: .utf8)
         }
         guard let json = data else { return nil }
+        return entries(fromJSON: json)
+    }
 
+    /// 供 App Intents 使用：支持 Base64 或直接是 JSON 文本
+    static func records(from payload: String) -> [Record] {
+        let text = payload.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return [] }
+        let json = base64Data(text) ?? Data(text.utf8)
+        return entries(fromJSON: json)?.compactMap { $0.record() } ?? []
+    }
+
+    /// 后台导入后刷新界面上的同步状态
+    static func noteImport(count: Int, at date: Date = Date()) {
+        UserDefaults.standard.set(count, forKey: Key.lastCount)
+        UserDefaults.standard.set(date, forKey: Key.lastSync)
+    }
+
+    private static func entries(fromJSON json: Data) -> [ShortcutEntry]? {
         let decoder = JSONDecoder()
         if let list = try? decoder.decode([ShortcutEntry].self, from: json) { return list }
         if let wrapper = try? decoder.decode(ShortcutPayload.self, from: json) { return wrapper.records }
