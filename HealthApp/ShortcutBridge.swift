@@ -245,22 +245,36 @@ private struct ShortcutEntry: Decodable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        type = (try? container.decode(String.self, forKey: .type)) ?? ""
-        day = try? container.decode(String.self, forKey: .day)
-        date = try? container.decode(String.self, forKey: .date)
+        type = ShortcutEntry.strip((try? container.decode(String.self, forKey: .type)) ?? "")
+        day = ShortcutEntry.string(container, .day)
+        date = ShortcutEntry.string(container, .date)
         v1 = ShortcutEntry.double(container, .v1)
         v2 = ShortcutEntry.double(container, .v2)
         v3 = ShortcutEntry.double(container, .v3)
-        text = try? container.decode(String.self, forKey: .text)
-        note = try? container.decode(String.self, forKey: .note)
+        text = ShortcutEntry.string(container, .text)
+        note = ShortcutEntry.string(container, .note)
     }
 
-    /// 兼容数字、整数与字符串三种写法
+    /// 快捷指令里变量两侧常被误加方括号，这里统一剥掉
+    private static func strip(_ value: String) -> String {
+        value.trimmingCharacters(in: CharacterSet(charactersIn: "[]\" \n\t"))
+    }
+
+    private static func string(_ container: KeyedDecodingContainer<CodingKeys>,
+                               _ key: CodingKeys) -> String? {
+        guard let raw = try? container.decode(String.self, forKey: key) else { return nil }
+        let value = strip(raw)
+        return value.isEmpty ? nil : value
+    }
+
+    /// 兼容数字、整数、字符串以及被包成数组的写法
     private static func double(_ container: KeyedDecodingContainer<CodingKeys>,
                                _ key: CodingKeys) -> Double? {
         if let value = try? container.decode(Double.self, forKey: key) { return value }
         if let value = try? container.decode(Int.self, forKey: key) { return Double(value) }
-        if let value = try? container.decode(String.self, forKey: key) { return Fmt.parse(value) }
+        if let list = try? container.decode([Double].self, forKey: key), let first = list.first { return first }
+        if let list = try? container.decode([String].self, forKey: key), let first = list.first { return Fmt.parse(strip(first)) }
+        if let value = try? container.decode(String.self, forKey: key) { return Fmt.parse(strip(value)) }
         return nil
     }
 
