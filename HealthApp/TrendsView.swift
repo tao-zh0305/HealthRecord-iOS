@@ -38,24 +38,31 @@ struct TrendsView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 7) {
                 ForEach(MetricType.allCases) { type in
-                    Button {
-                        withAnimation(.easeOut(duration: 0.18)) { metric = type }
-                    } label: {
-                        Text(type.title)
-                            .font(.footnote.weight(.semibold))
-                            .padding(.horizontal, 13)
-                            .padding(.vertical, 7)
-                            .background(metric == type ? Theme.ink : Theme.card, in: Capsule())
-                            .foregroundStyle(metric == type ? Theme.bg : Color.secondary)
-                            .overlay(
-                                Capsule().stroke(Theme.line, lineWidth: metric == type ? 0 : 1)
-                            )
-                    }
-                    .buttonStyle(.plain)
+                    chip(type)
                 }
             }
             .padding(.vertical, 2)
         }
+    }
+
+    private func chip(_ type: MetricType) -> some View {
+        let isSelected = (metric == type)
+        let fill: Color = isSelected ? Theme.ink : Theme.card
+        let text: Color = isSelected ? Theme.bg : Color.secondary
+        let borderWidth: CGFloat = isSelected ? 0 : 1
+
+        return Button {
+            withAnimation(.easeOut(duration: 0.18)) { metric = type }
+        } label: {
+            Text(type.title)
+                .font(.footnote.weight(.semibold))
+                .padding(.horizontal, 13)
+                .padding(.vertical, 7)
+                .foregroundStyle(text)
+                .background(fill, in: Capsule())
+                .overlay(Capsule().stroke(Theme.line, lineWidth: borderWidth))
+        }
+        .buttonStyle(.plain)
     }
 
     private var rangePicker: some View {
